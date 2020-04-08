@@ -9,6 +9,18 @@ app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+const csvWriter = createCsvWriter({
+  path: 'log.csv',
+  header: [
+    {id: 'agent', title: 'Agent'},
+    {id: 'time', title: 'Time'},
+    {id: 'method', title: 'Method'},
+    {id: 'resource', title: 'Resource'},
+    {id: 'version', title: 'Version'},
+    {id: 'status', title: 'Status'},
+  ]
+});
+
 function toJsonData(req, res, next) {
   let stringData = '';
   let logs = [];
@@ -21,30 +33,21 @@ function toJsonData(req, res, next) {
       stringData = data.toString('utf8');
       logs = stringData.split('\n');
       headers = logs.shift().split(',');
-      for (let i=0; i<logs.length-1; i++) {
+      for (let i=0; i<logs.length; i++) {
         let currentLog = logs[i].split(',');
         let object = {};
-        for (let j=0; j<headers.length; j++) {
-          object[headers[j]] = currentLog[j];
-        }
-        results.push(object);
+        if (logs[i] == "\n" || logs[i].trim().length == 0)
+          continue;
+        else
+          for (let j=0; j<headers.length; j++) {
+            object[headers[j]] = currentLog[j];
+          }
+          results.push(object);
       }
     return res.end(JSON.stringify(results));
     }
   );
 };
-
-const csvWriter = createCsvWriter({
-  path: 'log.csv',
-  header: [
-    {id: 'agent', title: 'Agent'},
-    {id: 'time', title: 'Time'},
-    {id: 'method', title: 'Method'},
-    {id: 'resource', title: 'Resource'},
-    {id: 'version', title: 'Version'},
-    {id: 'status', title: 'Status'},
-  ]
-});
 
 app.use((req, res, next) => {
   res.status(200);
@@ -75,3 +78,13 @@ app.get('/', (req, res, next) => {
   });
 
 module.exports = app;
+
+//another way to readfile with npm package:
+// app.get('/logs', (req, res) => {
+//   res.status(200)
+//   csv()
+//       .fromFile(csvFilePath)
+//       .then((jsonObj) => {
+//           res.send(jsonObj);
+//       });
+// });
